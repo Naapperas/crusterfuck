@@ -22,27 +22,55 @@ impl Interpreter {
         }
     }
 
+    fn process_token(&mut self, token: Token) -> Result<(), ProgramError> {
+        match token {
+            Token::Inc => self.data[self.pointer] += 1,
+            Token::Dec => self.data[self.pointer] -= 1,
+            Token::MoveLeft => self.pointer -= 1,
+            Token::MoveRight => self.pointer += 1,
+            Token::Print => {
+                let current_byte = self.data[self.pointer];
+
+                let character = current_byte as char;
+
+                self.io.print(character);
+            }
+            Token::Read => {
+                let character = self.io.read();
+
+                self.data[self.pointer] = character as u8;
+            }
+            Token::Loop(loop_tokens) => {
+                if let Err(err) = self.run_loop(loop_tokens) {
+                    return Err(err);
+                }
+            }
+        };
+
+        Ok(())
+    }
+
     // TODO: see if we need to expose a non-mutable API
     pub fn run(&mut self, tokens: parser::ParseResult) -> Result<(), ProgramError> {
         for token in tokens {
-            match token {
-                Token::Inc => self.data[self.pointer] += 1,
-                Token::Dec => self.data[self.pointer] -= 1,
-                Token::MoveLeft => self.pointer -= 1,
-                Token::MoveRight => self.pointer += 1,
-                Token::Print => {
-                    let current_byte = self.data[self.pointer];
+            if let Err(err) = self.process_token(token) {
+                return Err(err);
+            }
+        }
 
-                    let character = current_byte as char;
+        Ok(())
+    }
 
-                    self.io.print(character);
+    fn run_loop(&mut self, loop_tokens: Vec<Token>) -> Result<(), ProgramError> {
+        loop {
+            if self.data[self.pointer] == 0 {
+                break;
+            }
+
+            for token in loop_tokens.clone() {
+                if let Err(err) = self.process_token(token) {
+                    return Err(err);
                 }
-                Token::Read => {
-                    let character = self.io.read();
-
-                    self.data[self.pointer] = character as u8;
-                }
-                Token::Loop(loop_tokens) => todo!(),
             }
         }
 

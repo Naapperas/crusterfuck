@@ -5,6 +5,7 @@ use clap::Parser;
 mod cli;
 mod config;
 mod interpreter;
+mod log;
 
 fn main() {
     let args = cli::CommandLineArgs::parse();
@@ -16,9 +17,11 @@ fn main() {
         },
     };
 
+    let logger = log::Logger::new_for(config);
+
     let parser = interpreter::parser::Parser::new();
 
-    let tokens = match parser.parse("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++.--++->+++++<-->>>>++.".into()) {
+    let tokens = match parser.parse(",.".into()) {
         Ok(tokens) => tokens,
         Err(err) => {
             eprintln!("{}", err);

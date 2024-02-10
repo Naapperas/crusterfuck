@@ -10,21 +10,7 @@ use toml;
 
 #[derive(Default, Deserialize)]
 pub struct Config {
-    verbosity: Verbosity,
-}
-
-impl Config {
-    pub fn new() -> Config {
-        Config {
-            verbosity: Default::default(),
-        }
-    }
-
-    pub fn set_verbosity(mut self, verbosity: Verbosity) -> Self {
-        self.verbosity = verbosity;
-
-        self
-    }
+    pub verbosity: Verbosity,
 }
 
 pub static CONFIG_FILE_PATH: &'static str = "~/.config/bRainSuck/config.toml";
