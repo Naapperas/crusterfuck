@@ -14,11 +14,15 @@ pub struct Interpreter {
     io: IO,
 }
 
-pub struct ProgramError {}
+pub enum ProgramError {
+    OutOfBounds,
+}
 
 impl fmt::Display for ProgramError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
+        match self {
+            ProgramError::OutOfBounds => write!(f, "Attempted to move pointer past end of buffer"),
+        }
     }
 }
 
@@ -37,14 +41,14 @@ impl Interpreter {
             Token::Dec => self.data[self.pointer] -= 1,
             Token::MoveLeft => {
                 if self.pointer == 0 {
-                    return Err(ProgramError {});
+                    return Err(ProgramError::OutOfBounds);
                 }
 
                 self.pointer -= 1;
             }
             Token::MoveRight => {
                 if self.pointer == BUFFER_SIZE - 1 {
-                    return Err(ProgramError {});
+                    return Err(ProgramError::OutOfBounds);
                 }
 
                 self.pointer += 1;
