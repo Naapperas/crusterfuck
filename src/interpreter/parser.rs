@@ -1,4 +1,4 @@
-use std::fmt;
+use std::{borrow::Borrow, fmt, path::Path};
 
 use crate::interpreter::{ast::Token, stack::Stack};
 
@@ -6,18 +6,23 @@ pub struct Parser {}
 
 pub type ParseResult = Vec<Token>;
 
-pub struct ParseError {
-    line: i32,
-    col: i32,
-    character: char,
+pub enum ParseError {
+    SourceFileNotFound(String),
+    BadToken(i16, i16, char),
 }
 
 impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_fmt(format_args!(
-            "Error parsing file contents at line {}, col {}. Found character {}",
-            self.line, self.col, self.character
-        ))
+        match self {
+            ParseError::BadToken(line, col, character) => f.write_fmt(format_args!(
+                "Error parsing file contents at line {}, col {}. Found character {}",
+                line, col, character
+            )),
+            ParseError::SourceFileNotFound(path) => f.write_fmt(format_args!(
+                "Could not open file at {}: file not found",
+                path
+            )),
+        }
     }
 }
 
@@ -26,6 +31,23 @@ impl Parser {
         Parser {}
     }
 
+    pub fn parse_file<P>(&self, path: P) -> Result<ParseResult, ParseError>
+    where
+        P: AsRef<Path>,
+    {
+        let res = std::fs::read_to_string(path.borrow());
+
+        match res {
+            Ok(contents) => self.parse(contents),
+            Err(_) => {
+                return Err(ParseError::SourceFileNotFound(
+                    path.as_ref().to_str().unwrap().into(), // TODO: bad unwrap
+                ));
+            }
+        }
+    }
+
+    // TODO: make this use a streaming/buffered implementation to be more performant
     pub fn parse(&self, contents: String) -> Result<ParseResult, ParseError> {
         let tokens = vec![];
 
@@ -64,13 +86,7 @@ impl Parser {
                     line += 1;
                     col = 0;
                 }
-                _ => {
-                    return Err(ParseError {
-                        line,
-                        col,
-                        character: token,
-                    })
-                }
+                _ => col += 1,
             }
 
             token_stack.push(current_level);
@@ -79,19 +95,11 @@ impl Parser {
         if token_stack.is_empty() {
             // we should have at least one single token vector: the program itself
 
-            return Err(ParseError {
-                line: -1,
-                col: -1,
-                character: Default::default(),
-            });
+            return Err(ParseError::BadToken(-1, -1, Default::default()));
         } else if token_stack.length() > 1 {
             // if we have more than one token vector that means that we have an unclosed loop somewhere
 
-            return Err(ParseError {
-                line,
-                col,
-                character: Default::default(),
-            });
+            return Err(ParseError::BadToken(line, col, Default::default()));
         }
 
         Ok(token_stack.pop().unwrap())

@@ -5,4 +5,6 @@ use clap::Parser;
 pub struct CommandLineArgs {
     #[arg(short, long, default_value_t = crate::config::CONFIG_FILE_PATH.to_string())]
     pub config: String,
+
+    pub input: String,
 }

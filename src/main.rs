@@ -21,7 +21,7 @@ fn main() {
 
     let parser = interpreter::parser::Parser::new();
 
-    let tokens = match parser.parse(",.".into()) {
+    let tokens = match parser.parse_file(args.input) {
         Ok(tokens) => tokens,
         Err(err) => {
             eprintln!("{}", err);
