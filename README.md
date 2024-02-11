@@ -1,2 +1,2 @@
-# BrainSuck
+# crusterfuck
 Rust interpreter for Brainfuck

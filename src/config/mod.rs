@@ -13,7 +13,7 @@ pub struct Config {
     pub verbosity: Verbosity,
 }
 
-pub static CONFIG_FILE_PATH: &'static str = "~/.config/bRainSuck/config.toml";
+pub static CONFIG_FILE_PATH: &'static str = "~/.config/crusterfuck/config.toml";
 
 pub fn parse<P>(path: P) -> Result<Config, ConfigErr>
 where

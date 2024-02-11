@@ -25,8 +25,8 @@ impl Interpreter {
         match token {
             Token::Inc => self.data[self.pointer] += 1,
             Token::Dec => self.data[self.pointer] -= 1,
-            Token::MoveLeft => self.pointer -= 1,
-            Token::MoveRight => self.pointer += 1,
+            Token::MoveLeft => self.pointer -= 1, // TODO: bounds checks
+            Token::MoveRight => self.pointer += 1, // TODO: bounds checks
             Token::Print => {
                 let current_byte = self.data[self.pointer];
 
