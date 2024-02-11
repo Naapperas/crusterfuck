@@ -9,7 +9,7 @@ impl IO {
     }
 
     pub fn print(&self, c: char) {
-        println!("{c}")
+        print!("{c}")
     }
 
     pub fn read(&self) -> char {

@@ -3,7 +3,6 @@ use self::{ast::Token, io::IO};
 pub mod ast;
 mod io;
 pub mod parser;
-mod stack;
 
 pub struct Interpreter {
     data: [u8; 30000],
