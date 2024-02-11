@@ -3,17 +3,17 @@ use serde::Deserialize;
 #[derive(Default, Debug, Deserialize)]
 pub enum VerbosityLevel {
     #[default]
-    NONE,
+    None,
 
-    LOW,
+    Low,
 
-    MEDIUM,
+    Medium,
 
-    HIGH,
+    High,
 }
 
 #[derive(Default, Deserialize)]
 pub struct Verbosity {
-    enabled: bool,
-    level: VerbosityLevel,
+    pub enabled: bool,
+    pub level: VerbosityLevel,
 }

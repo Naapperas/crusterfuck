@@ -1,21 +1,31 @@
+use std::fmt;
+
 use self::{ast::Token, io::IO};
 
 pub mod ast;
 mod io;
 pub mod parser;
 
+const BUFFER_SIZE: usize = 30000;
+
 pub struct Interpreter {
-    data: [u8; 30000],
+    data: [u8; BUFFER_SIZE],
     pointer: usize,
     io: IO,
 }
 
 pub struct ProgramError {}
 
+impl fmt::Display for ProgramError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        todo!()
+    }
+}
+
 impl Interpreter {
     pub fn new() -> Self {
         Interpreter {
-            data: [0; 30000],
+            data: [0; BUFFER_SIZE],
             pointer: 0,
             io: IO::new(),
         }
@@ -25,8 +35,20 @@ impl Interpreter {
         match token {
             Token::Inc => self.data[self.pointer] += 1,
             Token::Dec => self.data[self.pointer] -= 1,
-            Token::MoveLeft => self.pointer -= 1, // TODO: bounds checks
-            Token::MoveRight => self.pointer += 1, // TODO: bounds checks
+            Token::MoveLeft => {
+                if self.pointer == 0 {
+                    return Err(ProgramError {});
+                }
+
+                self.pointer -= 1;
+            }
+            Token::MoveRight => {
+                if self.pointer == BUFFER_SIZE - 1 {
+                    return Err(ProgramError {});
+                }
+
+                self.pointer += 1;
+            }
             Token::Print => {
                 let current_byte = self.data[self.pointer];
 
@@ -39,11 +61,7 @@ impl Interpreter {
 
                 self.data[self.pointer] = character as u8;
             }
-            Token::Loop(loop_tokens) => {
-                if let Err(err) = self.run_loop(loop_tokens) {
-                    return Err(err);
-                }
-            }
+            Token::Loop(loop_tokens) => self.run_loop(loop_tokens)?,
         };
 
         Ok(())
@@ -52,9 +70,7 @@ impl Interpreter {
     // TODO: see if we need to expose a non-mutable API
     pub fn run(&mut self, tokens: parser::ParseResult) -> Result<(), ProgramError> {
         for token in tokens {
-            if let Err(err) = self.process_token(token) {
-                return Err(err);
-            }
+            self.process_token(token)?
         }
 
         Ok(())
@@ -67,9 +83,7 @@ impl Interpreter {
             }
 
             for token in loop_tokens.clone() {
-                if let Err(err) = self.process_token(token) {
-                    return Err(err);
-                }
+                self.process_token(token)?
             }
         }
 

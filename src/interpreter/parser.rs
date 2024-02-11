@@ -61,56 +61,48 @@ impl Parser {
         let mut line = 1;
         let mut col = 1;
 
-        loop {
-            match token_stream.next() {
-                Some(token) => {
-                    match token {
-                        '+' | '-' | '>' | '<' | '.' | ',' => match self.process_op(token) {
-                            Some(op_token) => tokens.push(op_token),
-                            None => {
-                                continue;
-                            }
-                        },
-                        '[' => {
-                            // Start loop construct
-
-                            match self.parse_loop(token_stream.borrow_mut()) {
-                                Ok((loop_token, line_delta, col_delta)) => {
-                                    // update current consumption location
-                                    if line_delta == 0 {
-                                        col += col_delta;
-                                    } else {
-                                        col = col_delta;
-                                        line += line_delta;
-                                    }
-
-                                    tokens.push(loop_token)
-                                }
-                                Err(e) => return Err(e),
-                            }
-                        }
-                        ']' => {
-                            // End loop construct
-
-                            // We should never reach this execution path if the program is syntactically correct (because the loop parsing code consumes the closing bracket).
-                            // It is correct to immediately return an error once we get here.
-
-                            return Err(ParseError::SyntaxError(line, col, token));
-                        }
-                        '\n' => {
-                            line += 1;
-                            col = 0;
-                        }
-                        _ => {} // other characters are ignored
+        while let Some(token) = token_stream.next() {
+            match token {
+                '+' | '-' | '>' | '<' | '.' | ',' => match self.process_op(token) {
+                    Some(op_token) => tokens.push(op_token),
+                    None => {
+                        continue;
                     }
+                },
+                '[' => {
+                    // Start loop construct
 
-                    col += 1;
+                    match self.parse_loop(token_stream.borrow_mut()) {
+                        Ok((loop_token, line_delta, col_delta)) => {
+                            // update current consumption location
+                            if line_delta == 0 {
+                                col += col_delta;
+                            } else {
+                                col = col_delta;
+                                line += line_delta;
+                            }
+
+                            tokens.push(loop_token)
+                        }
+                        Err(e) => return Err(e),
+                    }
                 }
-                None => {
-                    // We reached the end of the character stream, stop processing.
-                    break;
+                ']' => {
+                    // End loop construct
+
+                    // We should never reach this execution path if the program is syntactically correct (because the loop parsing code consumes the closing bracket).
+                    // It is correct to immediately return an error once we get here.
+
+                    return Err(ParseError::SyntaxError(line, col, token));
                 }
+                '\n' => {
+                    line += 1;
+                    col = 0;
+                }
+                _ => {} // other characters are ignored
             }
+
+            col += 1;
         }
 
         Ok(tokens)

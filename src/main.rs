@@ -12,27 +12,35 @@ fn main() {
 
     let config = match config::parse(args.config) {
         Ok(config) => config,
-        Err(error) => match error {
-            config::err::ConfigErr::InvalidConfigValue(_, _) => todo!(),
-        },
+        Err(error) => {
+            eprintln!("{}", error);
+
+            exit(1)
+        }
     };
 
-    let logger = log::Logger::new_for(config);
+    let logger = log::Logger::new_for(&config);
 
     let parser = interpreter::parser::Parser::new();
+
+    logger.medium(format!("Parsing file: {}", args.input));
 
     let tokens = match parser.parse_file(args.input) {
         Ok(tokens) => tokens,
         Err(err) => {
-            eprintln!("{}", err);
+            logger.high(format!("Error parsing file: {}", err));
 
-            exit(1);
+            exit(2);
         }
     };
+
+    logger.medium("Running Brainfuck program");
 
     let mut interpreter = interpreter::Interpreter::new();
 
     if let Err(err) = interpreter.run(tokens) {
-        exit(1); // TODO: better error handling
+        logger.high(format!("Error while running Brainfuck code: {}", err));
+
+        exit(3);
     }
 }
