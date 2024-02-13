@@ -7,12 +7,18 @@ use std::{
 
 use crate::interpreter::ast::Token;
 
+/// A parser responsible for consuming source input as text and return a structured representation of the code.
 pub struct Parser {}
 
+/// Structured representation of the code in a brainfuck file.
 pub type ParseResult = Vec<Token>;
 
+/// Error returned when parsing a brainfuck file.
 pub enum ParseError {
+    /// Returned when attempting to read a source file that does not exist or is not accessible.
     SourceFileNotFound(String),
+
+    /// The brainfuck code contains a syntactical error (most likely an unmatched '[' or ']' character)
     SyntaxError(i16, i16, char),
 }
 
@@ -32,10 +38,14 @@ impl fmt::Display for ParseError {
 }
 
 impl Parser {
+    /// Constructs a new parser.
     pub fn new() -> Self {
         Parser {}
     }
 
+    /// Reads the contents of the file at the given path and parses them, returning [Ok] if a structured representation of the code could be assembled.
+    ///
+    /// Returns [Err] if the file could not be found or if there were any parsing errors.
     pub fn parse_file<P>(&self, path: P) -> Result<ParseResult, ParseError>
     where
         P: AsRef<Path>,
@@ -52,8 +62,11 @@ impl Parser {
         }
     }
 
-    // TODO: make this use a streaming/buffered implementation to be more performant and memory efficient
+    /// Parses a string representing brainfuck code.
+    ///
+    /// Returns [Ok] if the operations is successful or [Err] if there has been a parsing or I/O error.
     pub fn parse(&self, contents: String) -> Result<ParseResult, ParseError> {
+        // TODO: make this use a streaming/buffered implementation to be more performant and memory efficient
         let mut tokens = vec![];
 
         let mut token_stream = contents.chars();
@@ -108,6 +121,7 @@ impl Parser {
         Ok(tokens)
     }
 
+    /// Specialized, recursive function used to parse loops with any level of nesting.
     fn parse_loop(&self, token_stream: &mut Chars) -> Result<(Token, i16, i16), ParseError> {
         let mut loop_tokens = vec![];
 
@@ -170,6 +184,7 @@ impl Parser {
         }
     }
 
+    /// Process a basic operation and generate the associated token.
     fn process_op(&self, token: char) -> Option<Token> {
         match token {
             '+' => Some(Token::Inc),
