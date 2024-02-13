@@ -1,18 +1,10 @@
-use std::fmt;
+use std::{cell::RefCell, fmt};
 
 use self::{ast::Token, io::IO};
 
 pub mod ast;
 mod io;
 pub mod parser;
-
-const BUFFER_SIZE: usize = 30000;
-
-pub struct Interpreter {
-    data: [u8; BUFFER_SIZE],
-    pointer: usize,
-    io: IO,
-}
 
 pub enum ProgramError {
     OutOfBounds,
@@ -26,35 +18,83 @@ impl fmt::Display for ProgramError {
     }
 }
 
+const BUFFER_SIZE: usize = 30000;
+
+struct ArrayBuffer {
+    data: [u8; BUFFER_SIZE],
+    pointer: usize,
+}
+
+impl ArrayBuffer {
+    fn new() -> Self {
+        ArrayBuffer {
+            data: [0; BUFFER_SIZE],
+            pointer: 0,
+        }
+    }
+
+    fn pointer(&self) -> usize {
+        self.pointer
+    }
+
+    fn get(&self) -> u8 {
+        self.data[self.pointer]
+    }
+
+    fn set(&mut self, value: u8) {
+        self.data[self.pointer] = value;
+    }
+
+    fn inc(&mut self) {
+        self.data[self.pointer] += 1;
+    }
+
+    fn dec(&mut self) {
+        self.data[self.pointer] -= 1;
+    }
+
+    fn pointer_left(&mut self) {
+        self.pointer -= 1;
+    }
+
+    fn pointer_right(&mut self) {
+        self.pointer += 1;
+    }
+}
+
+pub struct Interpreter {
+    data: RefCell<ArrayBuffer>,
+    io: IO,
+}
+
 impl Interpreter {
     pub fn new() -> Self {
         Interpreter {
-            data: [0; BUFFER_SIZE],
-            pointer: 0,
+            data: RefCell::new(ArrayBuffer::new()),
             io: IO::new(),
         }
     }
 
-    fn process_token(&mut self, token: Token) -> Result<(), ProgramError> {
+    fn process_token(&self, token: Token) -> Result<(), ProgramError> {
         match token {
-            Token::Inc => self.data[self.pointer] += 1,
-            Token::Dec => self.data[self.pointer] -= 1,
+            Token::Inc => self.data.borrow_mut().inc(),
+            Token::Dec => self.data.borrow_mut().dec(),
             Token::MoveLeft => {
-                if self.pointer == 0 {
+                if self.data.borrow_mut().pointer() == 0 {
                     return Err(ProgramError::OutOfBounds);
                 }
 
-                self.pointer -= 1;
+                self.data.borrow_mut().pointer_left();
             }
             Token::MoveRight => {
-                if self.pointer == BUFFER_SIZE - 1 {
+                if self.data.borrow_mut().pointer() == BUFFER_SIZE - 1 {
                     return Err(ProgramError::OutOfBounds);
                 }
 
-                self.pointer += 1;
+                self.data.borrow_mut().pointer_right();
             }
             Token::Print => {
-                let current_byte = self.data[self.pointer];
+                let current_byte = self.data.borrow_mut().get();
 
                 let character = current_byte as char;
 
@@ -63,7 +103,11 @@ impl Interpreter {
             Token::Read => {
                 let character = self.io.read();
 
-                self.data[self.pointer] = character as u8;
+                if character.is_none() {
+                    return Err(ProgramError::OutOfBounds);
+                }
+
+                self.data.borrow_mut().set(character.unwrap() as u8);
             }
             Token::Loop(loop_tokens) => self.run_loop(loop_tokens)?,
         };
@@ -71,8 +115,7 @@ impl Interpreter {
         Ok(())
     }
 
-    // TODO: see if we need to expose a non-mutable API
-    pub fn run(&mut self, tokens: parser::ParseResult) -> Result<(), ProgramError> {
+    pub fn run(&self, tokens: parser::ParseResult) -> Result<(), ProgramError> {
         for token in tokens {
             self.process_token(token)?
         }
@@ -80,9 +123,9 @@ impl Interpreter {
         Ok(())
     }
 
-    fn run_loop(&mut self, loop_tokens: Vec<Token>) -> Result<(), ProgramError> {
+    fn run_loop(&self, loop_tokens: Vec<Token>) -> Result<(), ProgramError> {
         loop {
-            if self.data[self.pointer] == 0 {
+            if self.data.borrow_mut().get() == 0 {
                 break;
             }
 

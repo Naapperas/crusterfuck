@@ -45,9 +45,9 @@ impl Parser {
         match res {
             Ok(contents) => self.parse(contents),
             Err(_) => {
-                return Err(ParseError::SourceFileNotFound(
+                Err(ParseError::SourceFileNotFound(
                     path.as_ref().to_str().unwrap().into(), // FIXME: bad unwrap
-                ));
+                ))
             }
         }
     }

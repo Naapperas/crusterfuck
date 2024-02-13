@@ -36,7 +36,7 @@ fn main() {
 
     logger.medium("Running Brainfuck program");
 
-    let mut interpreter = interpreter::Interpreter::new();
+    let interpreter = interpreter::Interpreter::new();
 
     if let Err(err) = interpreter.run(tokens) {
         logger.high(format!("Error while running Brainfuck code: {}", err));
