@@ -6,7 +6,6 @@ use serde::Deserialize;
 #[derive(Default, Debug, Deserialize)]
 pub enum VerbosityLevel {
     /// No messages logged.
-    #[default]
     None,
 
     /// All messages are logged.
@@ -16,6 +15,7 @@ pub enum VerbosityLevel {
     Medium,
 
     /// Only high priority messages are logged.
+    #[default]
     High,
 }
 

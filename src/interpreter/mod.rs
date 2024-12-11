@@ -13,6 +13,9 @@ pub enum ProgramError {
 
     /// Error when performing an I/O operation.
     IOError,
+
+    /// Error when performing illegal operation
+    IllegalOperation 
 }
 
 impl fmt::Display for ProgramError {
@@ -20,6 +23,7 @@ impl fmt::Display for ProgramError {
         match self {
             ProgramError::OutOfBounds => write!(f, "Attempted to move pointer past end of buffer"),
             ProgramError::IOError => write!(f, "Error when attempting to perform IO operation"),
+            ProgramError::IllegalOperation => write!(f, "Operation is illegal")
         }
     }
 }
@@ -106,8 +110,16 @@ impl Interpreter {
     /// Processes the given [Token] and returns the result of its computation.
     fn process_token(&self, token: Token) -> Result<(), ProgramError> {
         match token {
-            Token::Inc => self.data.borrow_mut().inc(),
-            Token::Dec => self.data.borrow_mut().dec(),
+            Token::Inc => {
+                self.data.borrow_mut().inc();
+            }
+            Token::Dec => {
+                if self.data.borrow().get() == 0 {
+                    return Err(ProgramError::IllegalOperation);
+                }
+                
+                self.data.borrow_mut().dec();
+            }
             Token::MoveLeft => {
                 if self.data.borrow().pointer() == 0 {
                     return Err(ProgramError::OutOfBounds);

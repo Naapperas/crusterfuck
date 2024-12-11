@@ -1,3 +1,5 @@
+use std::fmt;
+
 /// Token that is parsed by a [Parser] from source input and can be consumed by an [Interpreter].
 #[derive(Debug, Clone)]
 pub enum Token {
@@ -21,4 +23,26 @@ pub enum Token {
 
     /// Signals the [Interpreter] to read a byte from `stdin` and store it at the currently pointed at location.
     Read,
+}
+
+impl fmt::Display for Token {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Inc => write!(f, "Inc"),
+            Self::Dec => write!(f, "Dec"),
+            Self::MoveRight => write!(f, "MoveRght"),
+            Self::MoveLeft => write!(f, "MoveLeft"),
+            Self::Loop(vec) => {
+                write!(f, "Loop[")?;
+
+                for ele in vec {
+                    write!(f, "{},", ele)?;
+                }
+
+                return write!(f, "]");
+            }
+            Self::Print => write!(f, "Print"),
+            Self::Read => write!(f, "Read"),
+        }
+    }
 }
