@@ -37,9 +37,4 @@ impl<'a> Logger<'a> {
     _log!(high, VerbosityLevel::High);
 
     _log!(medium, VerbosityLevel::High | VerbosityLevel::Medium);
-
-    _log!(
-        low,
-        VerbosityLevel::High | VerbosityLevel::Medium | VerbosityLevel::Low
-    );
 }

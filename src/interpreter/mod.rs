@@ -15,7 +15,7 @@ pub enum ProgramError {
     IOError,
 
     /// Error when performing illegal operation
-    IllegalOperation 
+    IllegalOperation { instruction: Token, pointer: usize },
 }
 
 impl fmt::Display for ProgramError {
@@ -23,7 +23,13 @@ impl fmt::Display for ProgramError {
         match self {
             ProgramError::OutOfBounds => write!(f, "Attempted to move pointer past end of buffer"),
             ProgramError::IOError => write!(f, "Error when attempting to perform IO operation"),
-            ProgramError::IllegalOperation => write!(f, "Operation is illegal")
+            ProgramError::IllegalOperation {
+                instruction,
+                pointer,
+            } => write!(
+                f,
+                "Operation is illegal: {instruction} at pointer address {pointer}"
+            ),
         }
     }
 }
@@ -34,7 +40,7 @@ const BUFFER_SIZE: usize = 30000;
 /// Buffer used internally by the interpreter.
 ///
 /// This struct exists for the sole purpose of exploiting **interior mutability**, allowing [Interpreter] objects to expose an immutable API.
-struct ArrayBuffer {
+struct Tape {
     /// The data held in the buffer.
     data: [u8; BUFFER_SIZE],
 
@@ -42,10 +48,10 @@ struct ArrayBuffer {
     pointer: usize,
 }
 
-impl ArrayBuffer {
+impl Tape {
     /// Creates a new empty [ArrayBuffer] with all elements set to 0 which points to the byte at position 0.
     fn new() -> Self {
-        ArrayBuffer {
+        Tape {
             data: [0; BUFFER_SIZE],
             pointer: 0,
         }
@@ -68,12 +74,14 @@ impl ArrayBuffer {
 
     /// Increments by 1 the value currently pointed at in the buffer
     fn inc(&mut self) {
-        self.data[self.pointer] += 1;
+        self.data[self.pointer] = self.data[self.pointer].wrapping_add(1);
+        // self.data[self.pointer] += 1;
     }
 
     /// Decrements by 1 the value currently pointed at in the buffer
     fn dec(&mut self) {
-        self.data[self.pointer] -= 1;
+        self.data[self.pointer] = self.data[self.pointer].wrapping_sub(1);
+        // self.data[self.pointer] -= 1;
     }
 
     /// Moves the pointer one position to the left.
@@ -92,7 +100,7 @@ pub struct Interpreter {
     /// The data used by the interpreter.
     ///
     /// This is stored behind a [RefCell] so we can expose an immutable API.
-    data: RefCell<ArrayBuffer>,
+    tape: RefCell<Tape>,
 
     /// Object that abstracts I/O operations away from interpreter objects.
     io: IO,
@@ -102,7 +110,7 @@ impl Interpreter {
     /// Creates a new [Interpreter] object with a empty [buffer](ArrayBuffer).
     pub fn new() -> Self {
         Interpreter {
-            data: RefCell::new(ArrayBuffer::new()),
+            tape: RefCell::new(Tape::new()),
             io: IO::new(),
         }
     }
@@ -111,31 +119,27 @@ impl Interpreter {
     fn process_token(&self, token: Token) -> Result<(), ProgramError> {
         match token {
             Token::Inc => {
-                self.data.borrow_mut().inc();
+                self.tape.borrow_mut().inc();
             }
             Token::Dec => {
-                if self.data.borrow().get() == 0 {
-                    return Err(ProgramError::IllegalOperation);
-                }
-                
-                self.data.borrow_mut().dec();
+                self.tape.borrow_mut().dec();
             }
             Token::MoveLeft => {
-                if self.data.borrow().pointer() == 0 {
+                if self.tape.borrow().pointer() == 0 {
                     return Err(ProgramError::OutOfBounds);
                 }
 
-                self.data.borrow_mut().pointer_left();
+                self.tape.borrow_mut().pointer_left();
             }
             Token::MoveRight => {
-                if self.data.borrow().pointer() == BUFFER_SIZE - 1 {
+                if self.tape.borrow().pointer() == BUFFER_SIZE - 1 {
                     return Err(ProgramError::OutOfBounds);
                 }
 
-                self.data.borrow_mut().pointer_right();
+                self.tape.borrow_mut().pointer_right();
             }
             Token::Print => {
-                let current_byte = self.data.borrow().get();
+                let current_byte = self.tape.borrow().get();
 
                 let character = current_byte as char;
 
@@ -143,7 +147,7 @@ impl Interpreter {
             }
             Token::Read => match self.io.read() {
                 None => return Err(ProgramError::IOError),
-                Some(character) => self.data.borrow_mut().set(character as u8),
+                Some(character) => self.tape.borrow_mut().set(character as u8),
             },
             Token::Loop(loop_tokens) => self.run_loop(loop_tokens)?,
         };
@@ -163,7 +167,8 @@ impl Interpreter {
     /// Specialized function used to run loops.
     fn run_loop(&self, loop_tokens: Vec<Token>) -> Result<(), ProgramError> {
         loop {
-            if self.data.borrow().get() == 0 {
+            // if 0 at the beginning of loop, skip it
+            if self.tape.borrow().get() == 0 {
                 break;
             }
 

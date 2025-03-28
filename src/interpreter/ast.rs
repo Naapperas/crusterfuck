@@ -28,21 +28,21 @@ pub enum Token {
 impl fmt::Display for Token {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Inc => write!(f, "Inc"),
-            Self::Dec => write!(f, "Dec"),
-            Self::MoveRight => write!(f, "MoveRght"),
-            Self::MoveLeft => write!(f, "MoveLeft"),
+            Self::Inc => write!(f, "+"),
+            Self::Dec => write!(f, "-"),
+            Self::MoveRight => write!(f, ">"),
+            Self::MoveLeft => write!(f, "<"),
             Self::Loop(vec) => {
-                write!(f, "Loop[")?;
+                write!(f, "[")?;
 
                 for ele in vec {
-                    write!(f, "{},", ele)?;
+                    write!(f, "{}", ele)?;
                 }
 
                 return write!(f, "]");
             }
-            Self::Print => write!(f, "Print"),
-            Self::Read => write!(f, "Read"),
+            Self::Print => write!(f, "."),
+            Self::Read => write!(f, ","),
         }
     }
 }

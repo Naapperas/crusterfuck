@@ -34,13 +34,23 @@ fn main() {
         }
     };
 
-    logger.medium("Running Brainfuck program");
+    let print_program = args.print_program.unwrap_or(false);
 
-    let interpreter = interpreter::Interpreter::new();
+    if print_program {
+        let mut string = String::new();
+        for i in tokens {
+            string = format!("{}{}", string, i);
+        }
+        print!("{}", string)
+    } else {
+        logger.medium("Running Brainfuck program");
 
-    if let Err(err) = interpreter.run(tokens) {
-        logger.high(format!("Error while running Brainfuck code: {}", err));
+        let interpreter = interpreter::Interpreter::new();
 
-        exit(3);
+        if let Err(err) = interpreter.run(tokens) {
+            logger.high(format!("Error while running Brainfuck code: {}", err));
+
+            exit(3);
+        }
     }
 }
